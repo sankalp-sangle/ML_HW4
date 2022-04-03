@@ -73,8 +73,13 @@ class dlnet:
         Recall Hint 1 from the notebook
         '''
         #TODO: implement this 
+        # Copy u into a new variable
+        u_copy = np.copy(u)
         
-        
+        # Apply Relu to each element of u_copy
+        u_copy[u_copy<=0] = 0
+
+        return u_copy
 
     def Tanh(self, u):
         '''
@@ -86,9 +91,13 @@ class dlnet:
         Recall Hint 1 from the notebook
         '''
         #TODO: implement this 
-        
-    
-    
+        u_copy = np.copy(u)
+
+        u_copy = np.tanh(u_copy)
+
+        return u_copy
+
+
     def dRelu(self, u):
         '''
         This method implements element wise differentiation of Relu, it is already implemented for you.  
@@ -123,6 +132,11 @@ class dlnet:
         '''
         
         #TODO: implement this 
+        N = y.shape[1]
+        E = y - yh
+        SE = np.sum(E**2)
+        MSE = SE / (2*N)
+        return MSE
 
 
     def forward(self, x):
@@ -140,7 +154,11 @@ class dlnet:
         self.ch['X'] = x #keep
 
         u1, o1, u2, o2 = None, None, None, None #remove this for implementation
-            
+        
+        u1 = np.dot(self.param['theta1'], x) + self.param['b1']
+        o1 = self.Relu(u1)
+        u2 = np.dot(self.param['theta2'], o1) + self.param['b2']
+        o2 = self.Tanh(u2)
 
 
         self.ch['u1'],self.ch['o1']=u1,o1 #keep 
@@ -164,8 +182,25 @@ class dlnet:
         Recall Hint 2 from the notebook
         '''    
         #TODO: implement this 
-             
+        N = y.shape[1]
         dLoss_theta2, dLoss_b2, dLoss_theta1, dLoss_b1 = None, None, None, None #remove this for implementation
+
+        dLoss_o2 = (self.ch['o2'] - y) / N
+        #print(dLoss_o2.shape)
+        dLoss_u2 = dLoss_o2 * self.dTanh(self.ch['u2'])
+        #print(dLoss_u2.shape)
+        dLoss_theta2 = np.dot(dLoss_u2, self.ch['o1'].T)
+        #print(dLoss_theta2.shape)
+        dLoss_b2 = np.sum(dLoss_u2, axis=1, keepdims=True) #
+        #print(dLoss_b2.shape)
+        dLoss_o1 = np.dot(self.param['theta2'].T, dLoss_u2)
+        #print(dLoss_o1.shape)
+        dLoss_u1 = dLoss_o1 * self.dRelu(self.ch['u1'])
+        #print(dLoss_u1.shape)
+        dLoss_theta1 = np.dot(dLoss_u1, self.ch['X'].T)
+        #print(dLoss_theta1.shape)
+        dLoss_b1 = np.sum(dLoss_u1, axis=1, keepdims=True) #
+        #print(dLoss_b1.shape)
       
             
         # parameters update, no need to change these lines
@@ -173,6 +208,8 @@ class dlnet:
         self.param["b2"] = self.param["b2"] - self.lr * dLoss_b2 #keep
         self.param["theta1"] = self.param["theta1"] - self.lr * dLoss_theta1 #keep
         self.param["b1"] = self.param["b1"] - self.lr * dLoss_b1 #keep
+
+        return dLoss_theta2, dLoss_b2, dLoss_theta1, dLoss_b1
 
 
     def gradient_descent(self, x, y, iter = 60000):
@@ -188,9 +225,19 @@ class dlnet:
         ''' 
         
         #TODO: implement this 
-        
-       
-    
+        self.nInit()
+        for i in range(iter):
+            yh = self.forward(x)
+            loss = self.nloss(y, yh)
+            if i % 1000 == 0:
+                self.loss.append(loss)
+                # print("iteration: ", i, "loss: ", loss)
+
+            dLoss_theta2, dLoss_b2, dLoss_theta1, dLoss_b1 = self.backward(y, yh)
+            
+        return
+
+
     #bonus for undergrdauate students 
     def batch_gradient_descent(self, x, y, iter = 60000):
         '''
@@ -211,8 +258,37 @@ class dlnet:
         '''
         
         #TODO: implement this 
-        
+        self.nInit()
+        D = x.shape[0]
+        N = x.shape[1]
+        print(D, N)
+        for i in range(iter):
+            batch = np.ones((D, self.batch_size))
+            ybatch = np.ones((1, self.batch_size))
 
+            start = self.iter
+            end = self.iter + self.batch_size
+            # print("start", start, "end", end)
+            if end > x.shape[1]:
+                batch[:, 0:x.shape[1] - start] = x[:, start:x.shape[1]]
+                batch[:, x.shape[1] - start:x.shape[1]] = x[:, 0:end - x.shape[1]]
+                ybatch[:, 0:x.shape[1] - start] = y[:, start:x.shape[1]]
+                ybatch[:, x.shape[1] - start:x.shape[1]] = y[:, 0:end - x.shape[1]]
+            else:
+                batch = x[:, start:end]
+                ybatch = y[:, start:end]
+            yh = self.forward(batch)
+            loss = self.nloss(ybatch, yh)
+            if i % 1000 == 0:
+                self.loss.append(loss)
+                # print("iteration: ", i, "loss: ", loss)
+            
+            dLoss_theta2, dLoss_b2, dLoss_theta1, dLoss_b1 = self.backward(ybatch, yh)
+
+            self.iter += self.batch_size
+            self.iter %= x.shape[1]
+            
+        return
 
     def predict(self, x): 
         '''
