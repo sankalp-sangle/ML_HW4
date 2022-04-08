@@ -9,9 +9,9 @@ from tensorflow.keras.layers import LeakyReLU
 class CNN(object):
     def __init__(self):
         # change these to appropriate values
-        self.batch_size = 512
-        self.epochs = 2
-        self.init_lr= 1e-5 #learning rate
+        self.batch_size = 256
+        self.epochs = 4
+        self.init_lr= 0.001 #learning rate
 
         # No need to modify these
         self.model = None
@@ -28,8 +28,42 @@ class CNN(object):
         '''
 
         #TODO: implement this
+        model = Sequential()
+
+        model.add(Conv2D(8, (3, 3), input_shape=(28, 28, 1), padding='same'))
+        model.add(LeakyReLU(alpha=0.1))
+
+        model.add(Conv2D(32, (3, 3), padding='same'))
+        model.add(LeakyReLU(alpha=0.1))
+
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+
+        model.add(Dropout(0.3))
+
+        model.add(Conv2D(32, (3, 3), padding='same'))
+        model.add(LeakyReLU(alpha=0.1))
+
+        model.add(Conv2D(64, (3, 3), padding='same'))
+        model.add(LeakyReLU(alpha=0.1))
+
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+
+        model.add(Dropout(0.3))
+
+        model.add(Flatten())
+
+        model.add(Dense(256))
+
+        model.add(LeakyReLU(alpha=0.1))
+
+        model.add(Dropout(0.5))
+
+        model.add(Dense(10))
+
+        model.add(Activation('softmax'))
         
-        
+        self.model = model
+
         return self.model
 
     def compile_net(self, model):
@@ -40,6 +74,7 @@ class CNN(object):
         self.model = model
 
         #TODO: implement this
-        
+        # Compile model
+        self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
         return self.model
