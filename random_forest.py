@@ -36,11 +36,14 @@ class RandomForest(object):
         ############# Get Row Indices First - write your code below #####################
         #  
         #################################################################################
+        row_idx = np.random.choice(num_training, num_training, replace=True)
 
         ############# Get Col Indices Second - write your code below ####################
+        number_of_selections = int(num_features * self.max_features)
+        col_idx = np.random.choice(num_features, number_of_selections, replace=False)
 
         ##################################################################################
-        raise NotImplementedError # delete this
+
         return row_idx, col_idx
 
             
@@ -69,7 +72,9 @@ class RandomForest(object):
         Returns: 
             None. Calling this function should train the decision trees held in self.decision_trees
         """
-        raise NotImplementedError # delete this
+        self.bootstrapping(X.shape[0], X.shape[1])
+        for i in range(self.n_estimators):
+            self.decision_trees[i].fit(X[self.bootstraps_row_indices[i]][:, self.feature_indices[i]], y[self.bootstraps_row_indices[i]])
 
     def OOB_score(self, X, y):
         # helper function. You don't have to modify it
@@ -97,7 +102,25 @@ class RandomForest(object):
         Returns:
             None. Calling this function should simply display the aforementioned feature importance bar chart
         """
-        raise NotImplementedError # delete this
+        feature_importances = self.decision_trees[0].feature_importances_
+        # Feature names
+        feature_names = data_train.columns[self.feature_indices[0]]
+
+        # Sort the feature importances, and accordingly sort the feature names
+        indices = np.argsort(feature_importances)[::-1]
+        feature_names = np.array(feature_names)[indices]
+        feature_importances = feature_importances[indices]
+        
+        # Create the plot
+        plt.bar(range(len(feature_importances)), feature_importances, align='center')
+        plt.xticks(range(len(feature_importances)), feature_names)
+        plt.xlim([-1, len(feature_importances)])
+        plt.ylabel('Feature Importance')
+        plt.xlabel('Features')
+        plt.title('Feature Importance for Decision Tree')
+        plt.show()
+
+
 
 
 def select_hyperparameters():
@@ -113,8 +136,7 @@ def select_hyperparameters():
         max_depth: int number (e.g 4)
         max_features: a float between 0.0-1.0 (e.g 0.1)
     """
-    n_estimators = None
-    max_depth = None
-    max_features = None
-    raise NotImplementedError # delete this
+    n_estimators = 6
+    max_depth = 4
+    max_features = 0.6
     return n_estimators, max_depth, max_features 
